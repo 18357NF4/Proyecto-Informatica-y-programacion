@@ -1,9 +1,13 @@
 import pyfirmata
 import time
+import csv
+from datetime import datetime
+import socket
 
 calibracion = 0.1606
-error = 0.3
+error = 0.01
 
+# ... (las clases Sensor, Leds, Boton se mantienen igual)
 class Sensor:
     def __init__(self, board, pin, calibracion):
         self.board = board
@@ -68,7 +72,7 @@ class Boton:
     
     def estaPresionado(self):
         return self.pin.read() == 1
-    
+
 def promedio(arr):
     if len(arr) == 0:
         return 0
@@ -76,6 +80,18 @@ def promedio(arr):
         return sum(arr) / 5
     else:
         return sum(arr) / len(arr)
+
+def valorTendencia(diferencia):
+    if diferencia <-error:
+        return "BAJA"
+    elif abs(diferencia)<error:
+        return "NINGUNA"
+    else:
+        return "ALTA"
+
+
+
+# --- CONFIGURACIÓN ---
 
 # Definición de la placa e inicialización del iterador
 board = pyfirmata.Arduino('COM7')
@@ -86,11 +102,14 @@ it.start()
 sensor = Sensor(board, 1, calibracion)
 boton = Boton(board, 5)
 leds = Leds(board, 8, 9, 10)
-time.sleep(1)  # Solo este sleep para inicialización
+time.sleep(1)
 
 # Variables de estado y control
 temperaturas = []
 promedios = []
+fechas = []
+horas = []
+tendencias = []
 intervaloLectura = 3.5
 ultimoTiempoLectura = time.time()
 programaActivo = True
@@ -111,94 +130,92 @@ print(f"Intervalo inicial: {intervaloLectura}s")
 print("Mantén el botón presionado para cambiar el intervalo")
 print("Menos de 1 segundo: Salir | 1-10 segundos: Cambiar intervalo")
 
-while programaActivo:
-    tiempoActual = time.time()
-    
-    # --- CONTROL DEL BOTÓN (NO BLOQUEANTE) ---
-    if boton.estaPresionado():
-        if not botonPresionado:
-            # Botón acaba de ser presionado
-            botonPresionado = True
-            midiendo = True  # Bloquear mediciones mientras se presiona el botón
-            tiempoPresionInicio = tiempoActual
-            tiempoUltimoDestello = tiempoActual
-            print("Botón presionado, cambiando intervalo de lectura")
-        
-        # Destellos cada segundo mientras se mantiene presionado
-        if tiempoActual - tiempoUltimoDestello >= 1.0:
-            leds.destellar()
-            tiempoUltimoDestello = tiempoActual
-            
-    else:
-        if botonPresionado:
-            # Botón acaba de ser liberado
-            tiempoPresionado = tiempoActual - tiempoPresionInicio
-            botonPresionado = False
-            midiendo = False  # Permitir mediciones nuevamente
-            
-            print(f"Botón liberado después de {tiempoPresionado:.1f} segundos")
-            
-            if tiempoPresionado < 1.0:
-                programaActivo = False
-                print("Saliendo del programa...")
-            elif 1.0 <= tiempoPresionado <= 10.0:
-                intervaloLectura = tiempoPresionado
-                print(f'El nuevo tiempo de lectura es de {intervaloLectura:.1f}s')
-            else:
-                print("Tiempo excedido, no se hace nada")
-    
-    # --- LECTURA DEL SENSOR (SOLO SI NO SE ESTÁ PRESIONANDO EL BOTÓN) ---
-    if not botonPresionado and tiempoActual - ultimoTiempoLectura >= intervaloLectura:
-        try:
-            midiendo = True
-            temp = sensor.leer()
-            temperaturas.append(temp)
-            print(f'Temperatura: {temp:.2f}°C | Promedio: {promedio(temperaturas):.2f}°C | Intervalo: {intervaloLectura:.1f}s')
-            
-            # Preparar para mostrar tendencia
-            if len(temperaturas) >= 5:
-                p = promedio(temperaturas)
-                promedios.append(p)
-                diferenciaActual = temperaturas[-1] - p
-                mostrandoTendencia = True
-                tiempoInicioTendencia = tiempoActual
-            
-            ultimoTiempoLectura = tiempoActual
-            midiendo = False
-            
-        except ValueError as e:
-            print(f"Error de lectura: {e}")
-            midiendo = False
-            ultimoTiempoLectura = tiempoActual
-    
-    # --- CONTROL DE LEDs (CON PRIORIDADES) ---
-    # Prioridad 1: Botón presionado (destellos ya manejados arriba)
-    if botonPresionado:
-        # Los destellos se manejan en la sección del botón
-        pass
-    
-    # Prioridad 2: Mostrando tendencia
-    elif mostrandoTendencia:
-        if tiempoActual - tiempoInicioTendencia < 0.5:
-            # Seguir mostrando tendencia
-            leds.marcarTendencia(diferenciaActual, error, tiempoInicioTendencia)
+try:
+    while programaActivo:
+        tiempoActual = time.time()  
+        # --- CONTROL DEL BOTÓN ---
+        if boton.estaPresionado():
+            if not botonPresionado:
+                botonPresionado = True
+                midiendo = True
+                tiempoPresionInicio = tiempoActual
+                tiempoUltimoDestello = tiempoActual
+                print("Botón presionado, cambiando intervalo de lectura") 
+            if tiempoActual - tiempoUltimoDestello >= 1.0:
+                leds.destellar()
+                tiempoUltimoDestello = tiempoActual    
         else:
-            # Terminó el tiempo de tendencia
-            mostrandoTendencia = False
+            if botonPresionado:
+                tiempoPresionado = tiempoActual - tiempoPresionInicio
+                botonPresionado = False
+                midiendo = False
+                print(f"Botón liberado después de {tiempoPresionado:.1f} segundos")
+                if tiempoPresionado < 1.0:
+                    programaActivo = False
+                    print("Saliendo del programa...")
+                elif 1.0 <= tiempoPresionado <= 10.0:
+                    intervaloLectura = tiempoPresionado
+                    print(f'El nuevo tiempo de lectura es de {intervaloLectura:.1f}s')
+                else:
+                    print("Tiempo excedido, no se hace nada")
+        # --- LECTURA DEL SENSOR ---
+        if not botonPresionado and tiempoActual - ultimoTiempoLectura >= intervaloLectura:
+            try:
+                midiendo = True
+                temp = sensor.leer()
+                temperaturas.append(temp)
+                fecha = datetime.now().strftime("%Y-%m-%d")
+                fechas.append(fecha)
+                hora = datetime.now().strftime("%H:%M:%S")
+                horas.append(hora)               
+                # Calcular promedio y tendencia
+                p = promedio(temperaturas)
+                tendencia = valorTendencia(temp - p) if len(temperaturas) >= 5 else "INSUFICIENTE_DATOS"                
+                if len(temperaturas) >= 5:
+                    promedios.append(p)
+                    tendencias.append(tendencia)
+                print(f'Temperatura: {temp:.2f}°C | Promedio: {p:.2f}°C | Tendencia: {tendencia} | Intervalo: {intervaloLectura:.1f}s')
+                # Preparar para mostrar tendencia
+                if len(temperaturas) >= 5:
+                    diferenciaActual = temp - p
+                    mostrandoTendencia = True
+                    tiempoInicioTendencia = tiempoActual
+                
+                ultimoTiempoLectura = tiempoActual
+                midiendo = False
+                
+            except ValueError as e:
+                print(f"Error de lectura: {e}")
+                midiendo = False
+                ultimoTiempoLectura = tiempoActual
+        # --- CONTROL DE LEDs ---
+        if botonPresionado:
+            pass
+        elif mostrandoTendencia:
+            if tiempoActual - tiempoInicioTendencia < 0.5:
+                leds.marcarTendencia(diferenciaActual, error, tiempoInicioTendencia)
+            else:
+                mostrandoTendencia = False
+                leds.apagar()
+        elif len(temperaturas) < 5 and not botonPresionado:
+            leds.prender()
+        else:
             leds.apagar()
-    
-    # Prioridad 3: Menos de 5 lecturas
-    elif len(temperaturas) < 5 and not botonPresionado:
-        leds.prender()
-    
-    # Prioridad 4: Estado normal (apagar LEDs)
-    else:
-        leds.apagar()
-    
-    # Pequeña pausa para no saturar la CPU
-    time.sleep(0.01)
-
-# Limpieza final
-leds.apagar()
-board.exit()
-print("Programa terminado")
+        
+        time.sleep(0.01)
+except KeyboardInterrupt:  
+    print("Programa interrumpido por el usuario")
+finally:
+    leds.apagar()
+    board.exit()
+    print("Programa terminado")
+    # Guardar CSV
+    with open('DatosInformatica2.csv', 'w', newline='', encoding='utf-8') as f:
+        writer = csv.writer(f)
+        writer.writerow(['Fecha', 'Hora', 'Temperatura', 'Tendencia'])
+        for i in range(len(temperaturas)):
+            fecha = fechas[i] if i < len(fechas) else ""
+            hora = horas[i] if i < len(horas) else ""
+            temperatura = temperaturas[i] if i < len(temperaturas) else ""
+            tendencia = tendencias[i] if i < len(tendencias) else ""
+            writer.writerow([fecha, hora, temperatura, tendencia])
