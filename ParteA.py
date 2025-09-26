@@ -3,6 +3,7 @@ import time
 import csv
 from datetime import datetime
 import socket
+import json
 
 calibracion = 0.1606
 error = 0.01
@@ -92,6 +93,11 @@ def valorTendencia(diferencia):
 
 
 # --- CONFIGURACIÓN ---
+#Datos para ek socket
+IP_SERVIDOR="192.168.100.121"
+PUERTO=1500
+cliente=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+
 
 # Definición de la placa e inicialización del iterador
 board = pyfirmata.Arduino('COM7')
@@ -131,6 +137,9 @@ print("Mantén el botón presionado para cambiar el intervalo")
 print("Menos de 1 segundo: Salir | 1-10 segundos: Cambiar intervalo")
 
 try:
+    cliente = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    cliente.connect((IP_SERVIDOR, PUERTO))
+    print(f"✓ Conectado al servidor {IP_SERVIDOR}:{PUERTO}")
     while programaActivo:
         tiempoActual = time.time()  
         # --- CONTROL DEL BOTÓN ---
@@ -160,34 +169,46 @@ try:
                     print("Tiempo excedido, no se hace nada")
         # --- LECTURA DEL SENSOR ---
         if not botonPresionado and tiempoActual - ultimoTiempoLectura >= intervaloLectura:
-            try:
-                midiendo = True
-                temp = sensor.leer()
-                temperaturas.append(temp)
-                fecha = datetime.now().strftime("%Y-%m-%d")
-                fechas.append(fecha)
-                hora = datetime.now().strftime("%H:%M:%S")
-                horas.append(hora)               
-                # Calcular promedio y tendencia
-                p = promedio(temperaturas)
-                tendencia = valorTendencia(temp - p) if len(temperaturas) >= 5 else "INSUFICIENTE_DATOS"                
-                if len(temperaturas) >= 5:
-                    promedios.append(p)
-                    tendencias.append(tendencia)
-                print(f'Temperatura: {temp:.2f}°C | Promedio: {p:.2f}°C | Tendencia: {tendencia} | Intervalo: {intervaloLectura:.1f}s')
-                # Preparar para mostrar tendencia
-                if len(temperaturas) >= 5:
-                    diferenciaActual = temp - p
-                    mostrandoTendencia = True
-                    tiempoInicioTendencia = tiempoActual
+            midiendo = True
+            temp = sensor.leer()
+            temperaturas.append(temp)
+            fecha = datetime.now().strftime("%Y-%m-%d")
+            fechas.append(fecha)
+            hora = datetime.now().strftime("%H:%M:%S")
+            horas.append(hora)               
+            # Calcular promedio y tendencia
+            p = promedio(temperaturas)
+            tendencia = valorTendencia(temp - p)
+#--BLOQUE DE TRANSMISION DE DATOS --------------------------------------------
+        try:
+            datos = {
+                'temperatura': temp,
+                'fecha': fecha,
+                'hora': hora,
+                'tendencia': tendencia
+            }
+            mensajejson = json.dumps(datos)
+            cliente.send(mensajejson.encode('utf-8'))
+            time.sleep(0.005)
+        except ConnectionRefusedError:
+            # Se ejecuta si el servidor no está corriendo o la IP es incorrecta
+            print(" Error: No se pudo conectar. Verifica:")
+            print("  1. Que el servidor esté corriendo")
+            print("  2. Que la IP y puerto sean correctos")
+#--BLOQUE DE MUESTREO DE TENDENCIAS Y TEMPERATURAS
+            if len(temperaturas) >= 5:
+                promedios.append(p)
+                tendencias.append(tendencia)
+            print(f'Temperatura: {temp:.2f}°C | Promedio: {p:.2f}°C | Tendencia: {tendencia} | Intervalo: {intervaloLectura:.1f}s')
+            # Preparar para mostrar tendencia
+            if len(temperaturas) >= 5:
+                diferenciaActual = temp - p
+                mostrandoTendencia = True
+                tiempoInicioTendencia = tiempoActual
                 
-                ultimoTiempoLectura = tiempoActual
-                midiendo = False
-                
-            except ValueError as e:
-                print(f"Error de lectura: {e}")
-                midiendo = False
-                ultimoTiempoLectura = tiempoActual
+            ultimoTiempoLectura = tiempoActual
+            midiendo = False
+            ultimoTiempoLectura = tiempoActual
         # --- CONTROL DE LEDs ---
         if botonPresionado:
             pass
@@ -206,6 +227,7 @@ try:
 except KeyboardInterrupt:  
     print("Programa interrumpido por el usuario")
 finally:
+    cliente.close()
     leds.apagar()
     board.exit()
     print("Programa terminado")
@@ -214,8 +236,8 @@ finally:
         writer = csv.writer(f)
         writer.writerow(['Fecha', 'Hora', 'Temperatura', 'Tendencia'])
         for i in range(len(temperaturas)):
-            fecha = fechas[i] if i < len(fechas) else ""
-            hora = horas[i] if i < len(horas) else ""
-            temperatura = temperaturas[i] if i < len(temperaturas) else ""
-            tendencia = tendencias[i] if i < len(tendencias) else ""
+            fecha = fechas[i] 
+            hora = horas[i] 
+            temperatura = temperaturas[i] 
+            tendencia = tendencias[i]
             writer.writerow([fecha, hora, temperatura, tendencia])
