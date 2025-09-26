@@ -6,7 +6,7 @@ import socket
 import json
 
 calibracion = 0.1606
-error = 0.01
+error = 0.1
 
 # ... (las clases Sensor, Leds, Boton se mantienen igual)
 class Sensor:
