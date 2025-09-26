@@ -17,14 +17,14 @@ def promedio(lista):
 
 def actualizarGraficas(temperaturas, promedios, colores, tiempo):
     plt.clf()  
-    plt.subplot(3,1,1)
-    if temperaturas:
+    if len(temperaturas):
+        plt.subplot(3,1,1)
         plt.hist(temperaturas, bins=10, color="skyblue", edgecolor="black")
         plt.title("Histograma de temperaturas")
         plt.xlabel("Temperatura (°C)")
         plt.ylabel("Frecuencia")
-    plt.subplot(3,1,2)
-    if temperaturas and tiempo:
+    if len(temperaturas)>0 and len(tiempo)>0:
+        plt.subplot(3,1,2)
         plt.scatter(tiempo, temperaturas, c=colores, s=80, edgecolors="black")
         plt.title("Temperatura(t)")
         plt.xlabel("Tiempo")
@@ -33,8 +33,8 @@ def actualizarGraficas(temperaturas, promedios, colores, tiempo):
         plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
         plt.gca().xaxis.set_major_locator(mdates.AutoDateLocator())
         plt.xticks(rotation=45)
-    plt.subplot(3,1,3)
-    if promedios and tiempo:
+    if len(promedios)>0 and len(tiempo)>0:
+        plt.subplot(3,1,3)
         plt.plot(tiempo,promedios, marker="o", color="blue")
         plt.title("Evolución del promedio")
         plt.xlabel("Muestras")
@@ -56,6 +56,7 @@ servidor.listen(1)
 conexion,direccion=servidor.accept()
 print("esperando conexion")
 plt.ion()
+plt.figure(figsize=(10,8))
 try:
     while True:
         datosRecibidos=conexion.recv(1024).decode('utf-8')
