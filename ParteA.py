@@ -95,7 +95,7 @@ def valorTendencia(diferencia):
 # --- CONFIGURACIÓN ---
 #Datos para ek socket
 IP_SERVIDOR="192.168.100.121"
-PUERTO=1500
+PUERTO=21129
 cliente=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 
 
@@ -114,7 +114,6 @@ time.sleep(1)
 temperaturas = []
 promedios = []
 fechas = []
-horas = []
 tendencias = []
 intervaloLectura = 3.5
 ultimoTiempoLectura = time.time()
@@ -172,33 +171,28 @@ try:
             midiendo = True
             temp = sensor.leer()
             temperaturas.append(temp)
-            fecha = datetime.now().strftime("%Y-%m-%d")
-            fechas.append(fecha)
-            hora = datetime.now().strftime("%H:%M:%S")
-            horas.append(hora)               
+            fechaHora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            fechas.append(fechaHora)
             # Calcular promedio y tendencia
             p = promedio(temperaturas)
             tendencia = valorTendencia(temp - p)
+            promedios.append(p)
+            tendencias.append(tendencia)
 #--BLOQUE DE TRANSMISION DE DATOS --------------------------------------------
-        try:
-            datos = {
-                'temperatura': temp,
-                'fecha': fecha,
-                'hora': hora,
-                'tendencia': tendencia
-            }
-            mensajejson = json.dumps(datos)
-            cliente.send(mensajejson.encode('utf-8'))
-            time.sleep(0.005)
-        except ConnectionRefusedError:
-            # Se ejecuta si el servidor no está corriendo o la IP es incorrecta
-            print(" Error: No se pudo conectar. Verifica:")
-            print("  1. Que el servidor esté corriendo")
-            print("  2. Que la IP y puerto sean correctos")
-#--BLOQUE DE MUESTREO DE TENDENCIAS Y TEMPERATURAS
-            if len(temperaturas) >= 5:
-                promedios.append(p)
-                tendencias.append(tendencia)
+            try:
+                datos = {
+                    'temperatura': temp,
+                    'fecha': fechaHora,
+                    'tendencia': tendencia
+                }
+                mensajejson = json.dumps(datos)
+                cliente.send(mensajejson.encode('utf-8'))
+                time.sleep(0.005)
+            except (ConnectionRefusedError, ConnectionAbortedError, BrokenPipeError):
+                    print("Error de conexión: el servidor cerró la conexión")
+                    programaActivo = False  # salimos del loop limpio
+                    break
+#--BLOQUE DE MUESTREO DE TENDENCIAS Y TEMPERATURA
             print(f'Temperatura: {temp:.2f}°C | Promedio: {p:.2f}°C | Tendencia: {tendencia} | Intervalo: {intervaloLectura:.1f}s')
             # Preparar para mostrar tendencia
             if len(temperaturas) >= 5:
@@ -236,8 +230,7 @@ finally:
         writer = csv.writer(f)
         writer.writerow(['Fecha', 'Hora', 'Temperatura', 'Tendencia'])
         for i in range(len(temperaturas)):
-            fecha = fechas[i] 
-            hora = horas[i] 
+            fecha = fechas[i]  
             temperatura = temperaturas[i] 
             tendencia = tendencias[i]
-            writer.writerow([fecha, hora, temperatura, tendencia])
+            writer.writerow([fecha, temperatura, tendencia])
