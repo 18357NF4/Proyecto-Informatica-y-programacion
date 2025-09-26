@@ -13,31 +13,32 @@ promedios=[]
 def promedio(lista):
     return sum(lista)/len(lista) if lista else 0
 
-def actualizarGraficas(temperaturas,promedios,colores,tiempo):
+def actualizarGraficas(temperaturas, promedios, colores, tiempo):
+    plt.clf()  
     plt.subplot(3,1,1)
-    plt.cla()
-    plt.hist(temperaturas)
+    if temperaturas:
+        plt.hist(temperaturas, bins=10, color="skyblue", edgecolor="black")
     plt.title("Histograma de temperaturas")
-    plt.xlabel("temperaturas")
-    plt.ylabel("frecuencia simple")
-    
+    plt.xlabel("Temperatura (°C)")
+    plt.ylabel("Frecuencia")
     plt.subplot(3,1,2)
-    plt.cla()
-    plt.scatter(tiempo,temperaturas,c=colores,s=80,edgecolors="black")
+    if temperaturas and tiempo:
+        plt.scatter(tiempo, temperaturas, c=colores, s=80, edgecolors="black")
     plt.title("Temperatura(t)")
-    plt.xlabel("temperatura")
+    plt.xlabel("Tiempo")
+    plt.ylabel("Temperatura (°C)")
     plt.grid(True)
     plt.xticks(rotation=45)
-    plt.ylabel("Tiempo")
-    
     plt.subplot(3,1,3)
-    plt.cla()
-    plt.plot(promedios)
-    plt.title("evolucion del promedio")
-    plt.xlabel("temperatura")
-    plt.ylabel("frecuencia simple")
-    
-    plt.tight_layout()
+    if promedios:
+        plt.plot(promedios, marker="o", color="blue")
+    plt.title("Evolución del promedio")
+    plt.xlabel("Muestras")
+    plt.ylabel("Temperatura promedio (°C)")
+    try:
+        plt.tight_layout()
+    except Exception as e:
+        print("Aviso: tight_layout falló:", e)
     plt.pause(0.1)
     
     
