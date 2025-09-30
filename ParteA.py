@@ -41,15 +41,16 @@ class Leds:
     
     def destellar(self):
         """Destello rápido no bloqueante"""
+        self.apagar()
+        time.sleep(0.01)
         self.prender()
-        time.sleep(0.05)
+        time.sleepe(0.05)
         self.apagar()
     
     def marcarTendencia(self, diferencia, error, tiempo_inicio):
         """Versión no bloqueante de marcarTendencia"""
         tiempo_transcurrido = time.time() - tiempo_inicio
         self.apagar()
-        
         if diferencia < -error:
             # Verde parpadeante
             if int(tiempo_transcurrido * 2) % 2 == 0:
