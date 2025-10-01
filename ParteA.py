@@ -8,7 +8,6 @@ import json
 calibracion = 0.1606
 error = 0.1
 
-# ... (las clases Sensor, Leds, Boton se mantienen igual)
 class Sensor:
     def __init__(self, board, pin, calibracion):
         self.board = board
@@ -44,7 +43,7 @@ class Leds:
         self.apagar()
         time.sleep(0.01)
         self.prender()
-        time.sleepe(0.05)
+        time.sleep(0.05)
         self.apagar()
     
     def marcarTendencia(self, diferencia, error, tiempo_inicio):
@@ -84,21 +83,74 @@ def promedio(arr):
         return sum(arr) / len(arr)
 
 def valorTendencia(diferencia):
-    if diferencia <-error:
+    if diferencia < -error:
         return "BAJA"
-    elif abs(diferencia)<error:
+    elif abs(diferencia) < error:
         return "NINGUNA"
     else:
         return "ALTA"
 
-
-
 # --- CONFIGURACIÓN ---
-#Datos para ek socket
-IP_SERVIDOR="192.168.100.121"
-PUERTO=21129
-cliente=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+IP_SERVIDOR = "10.68.102.200"
+PUERTO = 21130
 
+# Variable global para el cliente
+cliente = None
+ultimo_intento_conexion = 0
+intervalo_reconexion = 5
+conexion_inicial = False
+
+def conectar_servidor():
+    """Intenta conectar al servidor y retorna el socket o None"""
+    global conexion_inicial # ¡Corrección! Declarar la variable como global
+    try:
+        nuevo_cliente = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        nuevo_cliente.settimeout(3)
+        nuevo_cliente.connect((IP_SERVIDOR, PUERTO))
+        print(f"✓ Conectado al servidor {IP_SERVIDOR}:{PUERTO}")
+        conexion_inicial = True
+        return nuevo_cliente
+    except socket.timeout:
+        if not conexion_inicial:
+            print(f"✗ Timeout: El servidor {IP_SERVIDOR} no responde")
+            print("  - Verifique que el servidor esté ejecutándose")
+            print("  - Verifique la IP y puerto")
+        conexion_inicial = False # ¡Corrección!
+        return None
+    except ConnectionRefusedError:
+        if not conexion_inicial:
+            print(f"✗ Conexión rechazada: Servidor en {IP_SERVIDOR}:{PUERTO}")
+            print("  - El servidor está ejecutándose pero rechazó la conexión")
+            print("  - Verifique firewall y configuración del servidor")
+        conexion_inicial = False # ¡Corrección!
+        return None
+    except Exception as e:
+        if not conexion_inicial:
+            print(f"✗ Error de conexión: {e}")
+        conexion_inicial = False # ¡Corrección!
+        return None
+
+def enviar_datos(datos):
+    """Intenta enviar datos y maneja reconexión automática"""
+    global cliente, ultimo_intento_conexion, conexion_inicial
+    
+    # Si no hay cliente, intentar reconectar periódicamente
+    if cliente is None and time.time() - ultimo_intento_conexion >= intervalo_reconexion:
+        ultimo_intento_conexion = time.time()
+        cliente = conectar_servidor()
+    
+    # Intentar enviar datos si hay conexión
+    if cliente is not None:
+        try:
+            # ¡Corrección! Añadir un delimitador de fin de línea
+            mensajejson = json.dumps(datos) + '\n' 
+            cliente.send(mensajejson.encode('utf-8'))
+            return True
+        except (ConnectionRefusedError, ConnectionAbortedError, BrokenPipeError, OSError) as e:
+            print("✗ Conexión perdida con el servidor, reintentando en 5 segundos...")
+            cliente = None
+            return False
+    return False
 
 # Definición de la placa e inicialización del iterador
 board = pyfirmata.Arduino('COM7')
@@ -136,10 +188,11 @@ print(f"Intervalo inicial: {intervaloLectura}s")
 print("Mantén el botón presionado para cambiar el intervalo")
 print("Menos de 1 segundo: Salir | 1-10 segundos: Cambiar intervalo")
 
+# Intentar conexión inicial
+print(f"Intentando conectar con servidor {IP_SERVIDOR}:{PUERTO}...")
+cliente = conectar_servidor()
+
 try:
-    cliente = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    cliente.connect((IP_SERVIDOR, PUERTO))
-    print(f"✓ Conectado al servidor {IP_SERVIDOR}:{PUERTO}")
     while programaActivo:
         tiempoActual = time.time()  
         # --- CONTROL DEL BOTÓN ---
@@ -179,19 +232,19 @@ try:
             tendencia = valorTendencia(temp - p)
             promedios.append(p)
             tendencias.append(tendencia)
-#--BLOQUE DE TRANSMISION DE DATOS --------------------------------------------
-            try:
-                datos = {
-                    'temperatura': temp,
-                    'fecha': fechaHora,
-                    'tendencia': tendencia
-                }
-                mensajejson = json.dumps(datos)
-                cliente.send(mensajejson.encode('utf-8'))
-                time.sleep(0.005)
-            except (ConnectionRefusedError, ConnectionAbortedError, BrokenPipeError):
-                    print("No hay conexión con el servidor")
-#--BLOQUE DE MUESTREO DE TENDENCIAS Y TEMPERATURA
+            
+            #--BLOQUE DE TRANSMISION DE DATOS --------------------------------------------
+            datos = {
+                'temperatura': temp,
+                'fecha': fechaHora,
+                'tendencia': tendencia
+            }
+            if enviar_datos(datos):
+                print("  ✓ Datos enviados al servidor")
+            else:
+                print("  ✗ No se enviaron datos (sin conexión)")
+            
+            #--BLOQUE DE MUESTREO DE TENDENCIAS Y TEMPERATURA
             print(f'Temperatura: {temp:.2f}°C | Promedio: {p:.2f}°C | Tendencia: {tendencia} | Intervalo: {intervaloLectura:.1f}s')
             # Preparar para mostrar tendencia
             if len(temperaturas) >= 5:
@@ -201,7 +254,7 @@ try:
                 
             ultimoTiempoLectura = tiempoActual
             midiendo = False
-            ultimoTiempoLectura = tiempoActual
+            
         # --- CONTROL DE LEDs ---
         if botonPresionado:
             pass
@@ -217,19 +270,23 @@ try:
             leds.apagar()
         
         time.sleep(0.01)
+        
 except KeyboardInterrupt:  
     print("Programa interrumpido por el usuario")
+    
 finally:
-    cliente.close()
+    if cliente is not None:
+        cliente.close()
+        print("Conexión cerrada")
     leds.apagar()
     board.exit()
     print("Programa terminado")
     # Guardar CSV
     with open('DatosInformatica2.csv', 'w', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
-        writer.writerow(['Fecha', 'Hora', 'Temperatura', 'Tendencia'])
+        writer.writerow(['Fecha', 'Temperatura', 'Tendencia'])
         for i in range(len(temperaturas)):
             fecha = fechas[i]  
-            temperatura = temperaturas[i] 
+            temperatura = temperaturas[i]  
             tendencia = tendencias[i]
             writer.writerow([fecha, temperatura, tendencia])
