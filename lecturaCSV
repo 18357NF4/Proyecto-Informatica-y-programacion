@@ -1,0 +1,85 @@
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+#include <stdio.h>
+//necesitamos una estructura que modele los datos entonces
+
+
+typedef struct {
+char fecha[20];
+char hora[10];
+double temperatura;
+char tendencias;
+}lecturas;
+
+
+//funcion para leer el archivo CSV nos debe devolver tipo de dato lectura
+//ademas va a modificar por valor la cantidad de lecturas totales sirviendo de contador
+lecturas* leer_csv(const char *nombre_del_archivo,int *total){
+FILE *archivo=fopen(nombre_del_archivo,"r");
+//se realiza el control de apertura del archivo
+if(!archivo){
+printf("error al abrir el archvo");
+return NULL;
+}
+   char linea [256];
+   int capacidad= 10;
+   int contador= 0;
+   //se reserva una memoria inicial con una capacidad generica
+   lecturas *lectura =malloc(capacidad * sizeof(lecturas));
+    
+   fgets(linea,sizeof(linea),archivo);
+   //leer datos
+   while (fgets(linea,sizeof(linea),archivo) !=NULL){
+
+        //redimensiona si es necesario
+        if(contador>=capacidad){
+            //se duplica la capacidad
+            capacidad *=2;
+            lectura=realloc(lectura, capacidad * sizeof(lecturas));
+
+
+        }
+        //recorre la linea con un  (formato:Fecha, Temperatura, Tendencia )
+        //utiliza la funcion strtok
+        char *token= strtok(linea,',');
+        if(token){
+            //separa fecha y hora
+            strcpy(lectura[contador].fecha,token);
+            token= strtok(NULL,',');
+            if(token){
+                lectura[contador].temperatura=atof(token);
+                token=strtok(NULL,",\r\n");
+                if(token){
+                   strcpy(lectura[contador].tendencias,token); 
+                }
+            }
+
+            contador++;
+        }
+
+   }
+    fclose(archivo);
+    *total=contador;
+    printf("se leyeron %d lecturas correctamente \n", contador);
+    return lectura;
+
+}
+
+int main(){
+
+char nombre_del_archivo[100];
+int total;
+printf("ingrese el nombre del archivo CSV:");
+fgets(nombre_del_archivo,sizeof(nombre_del_archivo),stdin);
+nombre_del_archivo[strcspn(nombre_del_archivo, "\n")] = 0;
+//lee el archivo
+lecturas *lectura= leer_csv(nombre_del_archivo,&total);
+  if (lectura == NULL || total == 0) {
+        printf("No se pudieron leer datos del archivo.\n");
+        return 1;
+    }
+    
+    free(lectura);
+
+}
