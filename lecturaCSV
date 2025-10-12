@@ -42,11 +42,11 @@ return NULL;
         }
         //recorre la linea con un  (formato:Fecha, Temperatura, Tendencia )
         //utiliza la funcion strtok
-        char *token= strtok(linea,',');
+        char *token= strtok(linea,",");
         if(token){
             //separa fecha y hora
             strcpy(lectura[contador].fecha,token);
-            token= strtok(NULL,',');
+            token= strtok(NULL,",");
             if(token){
                 lectura[contador].temperatura=atof(token);
                 token=strtok(NULL,",\r\n");
