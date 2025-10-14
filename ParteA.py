@@ -45,16 +45,16 @@ class Leds:
         time.sleep(0.05)
         self.apagar()
     
-    def marcarTendencia(self, diferencia, error, tiempo_inicio,promedio):
+    def marcarTendencia(self, diferencia, error, tiempo_inicio):
         """Versión no bloqueante de marcarTendencia"""
         tiempo_transcurrido = time.time() - tiempo_inicio
         self.apagar()
         
-        if diferencia < -error*promedio:
+        if diferencia < -error:
             # Verde parpadeante
             if int(tiempo_transcurrido * 2) % 2 == 0:
                 self.verde.write(1)
-        elif abs(diferencia) < error*promedio:
+        elif abs(diferencia) < error:
             # Amarillo parpadeante
             if int(tiempo_transcurrido * 2) % 2 == 0:
                 self.amarillo.write(1)
@@ -90,7 +90,39 @@ def valorTendencia(diferencia,promedio):
     else:
         return "ALTA"
 
-
+def mantenerConexion(cliente, puerto, IP):
+    # Verificar si la conexión actual está activa
+    conexion_activa = False
+    try:
+        cliente.settimeout(0.5)
+        cliente.recv(1, socket.MSG_PEEK)  # Verificación rápida
+        conexion_activa = True
+    except:
+        conexion_activa = False
+    if conexion_activa:
+        return
+    print("Conexión perdida. Iniciando reconexión...")
+    cliente.close()
+    while True:
+        try:
+            nuevo_cliente = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            nuevo_cliente.settimeout(3)
+            resultado = nuevo_cliente.connect_ex((IP, puerto))
+            
+            if resultado == 0:
+                print("✅ Reconexión exitosa")
+                # Actualizar la variable global cliente
+                global cliente
+                cliente = nuevo_cliente
+                break  # Sale del bucle de reconexión
+            else:
+                print(" Intento de reconexión fallido, reintentando...")
+                nuevo_cliente.close()
+                
+        except Exception as e:
+            print(f" Error en reconexión: {e}")
+        
+        time.sleep(3)  # Espera entre intentos
 
 # --- CONFIGURACIÓN ---
 #Datos para ek socket
@@ -140,6 +172,7 @@ try:
     cliente.connect((IP_SERVIDOR, PUERTO))
     print(f" Conectado al servidor {IP_SERVIDOR}:{PUERTO}")
     while programaActivo:
+        mantenerConexion(cliente, PUERTO,IP_SERVIDOR)
         tiempoActual = time.time()  
         # --- CONTROL DEL BOTÓN ---
         if boton.estaPresionado():
@@ -189,7 +222,9 @@ try:
                 cliente.send(mensajejson.encode('utf-8'))
                 time.sleep(0.005)
             except (ConnectionRefusedError, ConnectionAbortedError, BrokenPipeError):
-                    print("Error de conexión")
+                    print("Error de conexión: el servidor cerró la conexión")
+                    programaActivo = False  # salimos del loop limpio
+                    break
 #--BLOQUE DE MUESTREO DE TENDENCIAS Y TEMPERATURA
             print(f'Temperatura: {temp:.2f}°C | Promedio: {p:.2f}°C | Tendencia: {tendencia} | Intervalo: {intervaloLectura:.1f}s')
             # Preparar para mostrar tendencia
@@ -206,7 +241,7 @@ try:
             pass
         elif mostrandoTendencia:
             if tiempoActual - tiempoInicioTendencia < 0.5:
-                leds.marcarTendencia(diferenciaActual, error, tiempoInicioTendencia,p)
+                leds.marcarTendencia(diferenciaActual, error, tiempoInicioTendencia)
             else:
                 mostrandoTendencia = False
                 leds.apagar()
