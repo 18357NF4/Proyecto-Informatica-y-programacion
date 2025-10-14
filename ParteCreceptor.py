@@ -26,7 +26,7 @@ def actualizarGraficas(temperaturas, promedios, colores, tiempo):
         plt.ylabel("Frecuencia")
     if len(temperaturas) > 0 and len(tiempo) > 0:
         plt.subplot(3, 1, 2)
-        plt.scatter(tiempo, temperaturas, c=colores, s=80, edgecolors="black")
+        plt.scatter(tiempo, temperaturas, c=colores, s=80, edgecolors="black", marker='o')
         plt.title("Temperatura(t)")
         plt.xlabel("Tiempo")
         plt.ylabel("Temperatura (°C)")
@@ -53,7 +53,6 @@ def esperarConexion(servidor, puerto):
     while True:
         try:
             print("Esperando conexión del emisor...")
-            servidor.listen(1)
             conexion, direccion = servidor.accept()
             print(f"Conexión establecida con {direccion}")
             return conexion, direccion
@@ -62,7 +61,9 @@ def esperarConexion(servidor, puerto):
             time.sleep(3)
 
 servidor = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+servidor.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 servidor.bind(('0.0.0.0', puerto))
+servidor.listen(1)
 print('Servidor vinculado al puerto')
 
 conexion, direccion = esperarConexion(servidor, puerto)
@@ -98,7 +99,7 @@ try:
                 elif tend == "BAJA":
                     colores.append("green")
                 else:
-                    colores.append("yellow")
+                    colores.append("gold")
                     
                 actualizarGraficas(temperaturas, promedios, colores, tiempo)
                 
