@@ -8,7 +8,6 @@ import json
 calibracion = 0.1606
 error = 0.1
 
-# ... (las clases Sensor, Leds, Boton se mantienen igual)
 class Sensor:
     def __init__(self, board, pin, calibracion):
         self.board = board
@@ -46,7 +45,6 @@ class Leds:
         self.apagar()
     
     def marcarTendencia(self, diferencia, error, tiempo_inicio):
-        """Versión no bloqueante de marcarTendencia"""
         tiempo_transcurrido = time.time() - tiempo_inicio
         self.apagar()
         
@@ -62,8 +60,7 @@ class Leds:
             # Rojo parpadeante
             if int(tiempo_transcurrido * 2) % 2 == 0:
                 self.rojo.write(1)
-        
-        # La tendencia se muestra por 0.5 segundos
+
         return tiempo_transcurrido < 0.5
 
 class Boton:
