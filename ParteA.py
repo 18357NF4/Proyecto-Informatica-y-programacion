@@ -99,10 +99,13 @@ def mantenerConexion(cliente, puerto, IP):
         conexion_activa = True
     except:
         conexion_activa = False
+    
     if conexion_activa:
-        return
+        return cliente  # Retorna el mismo cliente
+    
     print("Conexión perdida. Iniciando reconexión...")
     cliente.close()
+    
     while True:
         try:
             nuevo_cliente = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -110,11 +113,8 @@ def mantenerConexion(cliente, puerto, IP):
             resultado = nuevo_cliente.connect_ex((IP, puerto))
             
             if resultado == 0:
-                print("✅ Reconexión exitosa")
-                # Actualizar la variable global cliente
-                global cliente
-                cliente = nuevo_cliente
-                break  # Sale del bucle de reconexión
+                print("Reconexión exitosa")
+                return nuevo_cliente  # Retorna el nuevo cliente
             else:
                 print(" Intento de reconexión fallido, reintentando...")
                 nuevo_cliente.close()
@@ -122,7 +122,7 @@ def mantenerConexion(cliente, puerto, IP):
         except Exception as e:
             print(f" Error en reconexión: {e}")
         
-        time.sleep(3)  # Espera entre intentos
+        time.sleep(3)
 
 # --- CONFIGURACIÓN ---
 #Datos para ek socket
@@ -172,7 +172,7 @@ try:
     cliente.connect((IP_SERVIDOR, PUERTO))
     print(f" Conectado al servidor {IP_SERVIDOR}:{PUERTO}")
     while programaActivo:
-        mantenerConexion(cliente, PUERTO,IP_SERVIDOR)
+        cliente=mantenerConexion(cliente, PUERTO,IP_SERVIDOR)
         tiempoActual = time.time()  
         # --- CONTROL DEL BOTÓN ---
         if boton.estaPresionado():
