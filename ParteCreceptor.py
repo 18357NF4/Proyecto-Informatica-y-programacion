@@ -38,7 +38,7 @@ def actualizarGraficas(temperaturas, promedios, colores, tiempo):
         plt.subplot(3, 1, 3)
         plt.plot(tiempo, promedios, marker="o", color="blue")
         plt.title("Evolución del promedio")
-        plt.xlabel("Muestras")
+        plt.xlabel("Tiempo")
         plt.ylabel("Temperatura promedio (°C)")
         plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
         plt.gca().xaxis.set_major_locator(mdates.AutoDateLocator())
