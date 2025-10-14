@@ -189,9 +189,7 @@ try:
                 cliente.send(mensajejson.encode('utf-8'))
                 time.sleep(0.005)
             except (ConnectionRefusedError, ConnectionAbortedError, BrokenPipeError):
-                    print("Error de conexión: el servidor cerró la conexión")
-                    programaActivo = False  # salimos del loop limpio
-                    break
+                    print("Error de conexión")
 #--BLOQUE DE MUESTREO DE TENDENCIAS Y TEMPERATURA
             print(f'Temperatura: {temp:.2f}°C | Promedio: {p:.2f}°C | Tendencia: {tendencia} | Intervalo: {intervaloLectura:.1f}s')
             # Preparar para mostrar tendencia
