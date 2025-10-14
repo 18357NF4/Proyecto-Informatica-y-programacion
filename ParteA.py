@@ -82,10 +82,10 @@ def promedio(arr):
     else:
         return sum(arr) / len(arr)
 
-def valorTendencia(diferencia):
-    if diferencia <-error:
+def valorTendencia(diferencia,promedio):
+    if diferencia <-error*promedio:
         return "BAJA"
-    elif abs(diferencia)<error:
+    elif abs(diferencia)<error*promedio:
         return "NINGUNA"
     else:
         return "ALTA"
@@ -138,7 +138,7 @@ print("Menos de 1 segundo: Salir | 1-10 segundos: Cambiar intervalo")
 try:
     cliente = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     cliente.connect((IP_SERVIDOR, PUERTO))
-    print(f"✓ Conectado al servidor {IP_SERVIDOR}:{PUERTO}")
+    print(f" Conectado al servidor {IP_SERVIDOR}:{PUERTO}")
     while programaActivo:
         tiempoActual = time.time()  
         # --- CONTROL DEL BOTÓN ---
@@ -161,11 +161,11 @@ try:
                 if tiempoPresionado < 1.0:
                     programaActivo = False
                     print("Saliendo del programa...")
-                elif 1.0 <= tiempoPresionado <= 10.0:
+                elif 2.5 <= tiempoPresionado <= 10.0:
                     intervaloLectura = tiempoPresionado
                     print(f'El nuevo tiempo de lectura es de {intervaloLectura:.1f}s')
                 else:
-                    print("Tiempo excedido, no se hace nada")
+                    intervaloLectura = 10
         # --- LECTURA DEL SENSOR ---
         if not botonPresionado and tiempoActual - ultimoTiempoLectura >= intervaloLectura:
             midiendo = True
@@ -175,7 +175,7 @@ try:
             fechas.append(fechaHora)
             # Calcular promedio y tendencia
             p = promedio(temperaturas)
-            tendencia = valorTendencia(temp - p)
+            tendencia = valorTendencia(temp - p,p)
             promedios.append(p)
             tendencias.append(tendencia)
 #--BLOQUE DE TRANSMISION DE DATOS --------------------------------------------
