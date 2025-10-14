@@ -45,16 +45,16 @@ class Leds:
         time.sleep(0.05)
         self.apagar()
     
-    def marcarTendencia(self, diferencia, error, tiempo_inicio):
+    def marcarTendencia(self, diferencia, error, tiempo_inicio,promedio):
         """Versión no bloqueante de marcarTendencia"""
         tiempo_transcurrido = time.time() - tiempo_inicio
         self.apagar()
         
-        if diferencia < -error:
+        if diferencia < -error*promedio:
             # Verde parpadeante
             if int(tiempo_transcurrido * 2) % 2 == 0:
                 self.verde.write(1)
-        elif abs(diferencia) < error:
+        elif abs(diferencia) < error*promedio:
             # Amarillo parpadeante
             if int(tiempo_transcurrido * 2) % 2 == 0:
                 self.amarillo.write(1)
@@ -208,7 +208,7 @@ try:
             pass
         elif mostrandoTendencia:
             if tiempoActual - tiempoInicioTendencia < 0.5:
-                leds.marcarTendencia(diferenciaActual, error, tiempoInicioTendencia)
+                leds.marcarTendencia(diferenciaActual, error, tiempoInicioTendencia,p)
             else:
                 mostrandoTendencia = False
                 leds.apagar()
