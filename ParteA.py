@@ -168,7 +168,6 @@ print("Mantén el botón presionado para cambiar el intervalo")
 print("Menos de 1 segundo: Salir | 1-10 segundos: Cambiar intervalo")
 
 try:
-    cliente = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     cliente.connect((IP_SERVIDOR, PUERTO))
     print(f" Conectado al servidor {IP_SERVIDOR}:{PUERTO}")
     while programaActivo:
@@ -220,11 +219,8 @@ try:
                 }
                 mensajejson = json.dumps(datos)
                 cliente.send(mensajejson.encode('utf-8'))
-                time.sleep(0.005)
             except (ConnectionRefusedError, ConnectionAbortedError, BrokenPipeError):
-                    print("Error de conexión: el servidor cerró la conexión")
-                    programaActivo = False  # salimos del loop limpio
-                    break
+                    print("Error de conexión")
 #--BLOQUE DE MUESTREO DE TENDENCIAS Y TEMPERATURA
             print(f'Temperatura: {temp:.2f}°C | Promedio: {p:.2f}°C | Tendencia: {tendencia} | Intervalo: {intervaloLectura:.1f}s')
             # Preparar para mostrar tendencia
@@ -235,7 +231,6 @@ try:
                 
             ultimoTiempoLectura = tiempoActual
             midiendo = False
-            ultimoTiempoLectura = tiempoActual
         # --- CONTROL DE LEDs ---
         if botonPresionado:
             pass
