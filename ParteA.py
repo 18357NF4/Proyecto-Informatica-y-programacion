@@ -208,13 +208,16 @@ try:
             promedios.append(p)
             tendencias.append(tendencia)
 #--BLOQUE DE TRANSMISION DE DATOS --------------------------------------------
-              # --- BLOQUE SIMPLIFICADO DE TRANSMISIÓN ---
             try:
-                # Enviar datos en formato simple: "temperatura|fecha|tendencia"
-                mensaje = f"{temp:.2f}|{fechaHora}|{tendencia}"
-                cliente.send(mensaje.encode('utf-8'))
+                datos = {
+                    'temperatura': temp,
+                    'fecha': fechaHora,
+                    'tendencia': tendencia
+                }
+                mensajejson = json.dumps(datos)
+                cliente.send(mensajejson.encode('utf-8'))
             except (ConnectionRefusedError, ConnectionAbortedError, BrokenPipeError):
-                print("Error de conexión")
+                    print("Error de conexión")
 #--BLOQUE DE MUESTREO DE TENDENCIAS Y TEMPERATURA
             print(f'Temperatura: {temp:.2f}°C | Promedio: {p:.2f}°C | Tendencia: {tendencia} | Intervalo: {intervaloLectura:.1f}s')
             # Preparar para mostrar tendencia
