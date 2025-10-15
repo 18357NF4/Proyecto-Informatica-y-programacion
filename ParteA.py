@@ -88,38 +88,35 @@ def valorTendencia(diferencia,promedio):
         return "ALTA"
 
 def mantenerConexion(cliente, puerto, IP):
-    # Verificar si la conexión actual está activa
-    conexion_activa = False
+    # Verificación ultra simple
     try:
-        cliente.settimeout(0.5)
-        cliente.recv(1, socket.MSG_PEEK)  # Verificación rápida
-        conexion_activa = True
+        # Solo verificar si el socket sigue siendo válido
+        cliente.getsockopt(socket.SOL_SOCKET, socket.SO_ERROR)
+        return cliente
     except:
-        conexion_activa = False
-    
-    if conexion_activa:
-        return cliente  # Retorna el mismo cliente
-    
-    print("Conexión perdida. Iniciando reconexión...")
-    cliente.close()
-    
-    while True:
+        print("Conexión perdida. Iniciando reconexión...")
         try:
-            nuevo_cliente = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            nuevo_cliente.settimeout(3)
-            resultado = nuevo_cliente.connect_ex((IP, puerto))
-            
-            if resultado == 0:
-                print("Reconexión exitosa")
-                return nuevo_cliente  # Retorna el nuevo cliente
-            else:
-                print(" Intento de reconexión fallido, reintentando...")
-                nuevo_cliente.close()
-                
-        except Exception as e:
-            print(f" Error en reconexión: {e}")
+            cliente.close()
+        except:
+            pass
         
-        time.sleep(3)
+        while True:
+            try:
+                nuevo_cliente = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                nuevo_cliente.settimeout(3)
+                resultado = nuevo_cliente.connect_ex((IP, puerto))
+                
+                if resultado == 0:
+                    print("Reconexión exitosa")
+                    return nuevo_cliente
+                else:
+                    print("Intento de reconexión fallido, reintentando...")
+                    nuevo_cliente.close()
+                    
+            except Exception as e:
+                print(f"Error en reconexión: {e}")
+            
+            time.sleep(3)
 
 # --- CONFIGURACIÓN ---
 #Datos para ek socket
