@@ -1,4 +1,5 @@
 import socket
+import json
 import matplotlib.pyplot as plt
 from datetime import datetime
 import matplotlib.dates as mdates
@@ -81,16 +82,11 @@ try:
                 conexion, direccion = esperarConexion(servidor, puerto)
                 continue
             
-            # Procesar datos en formato simple: "temperatura|fecha|tendencia"
-            partes = datosRecibidos.strip().split('|')
-            
-            if len(partes) == 3:
-                temp = float(partes[0])
-                fecha_str = partes[1]
-                tend = partes[2]
-                
-                # Convertir string de fecha a objeto datetime
-                fecha = datetime.strptime(fecha_str, "%Y-%m-%d %H:%M:%S")
+            try:
+                datos = json.loads(datosRecibidos)
+                temp = datos['temperatura']
+                fecha = datetime.strptime(datos['fecha'], "%Y-%m-%d %H:%M:%S")
+                tend = datos['tendencia']
                 
                 temperaturas.append(temp)
                 fechas.append(fecha)
@@ -98,7 +94,6 @@ try:
                 tendencias.append(tend)
                 promedios.append(promedio(temperaturas))
                 
-                # Asignar colores según la tendencia
                 if tend == "ALTA":
                     colores.append("red")
                 elif tend == "BAJA":
@@ -108,18 +103,13 @@ try:
                     
                 actualizarGraficas(temperaturas, promedios, colores, tiempo)
                 
-                # Mostrar datos en consola
-                print(f"Recibido: {temp:.2f}°C | {fecha_str} | {tend}")
-                
-            else:
-                print(f"Datos en formato incorrecto: {datosRecibidos}")
+            except json.JSONDecodeError:
+                print("Datos JSON invalidos")
                 
         except (ConnectionResetError, ConnectionAbortedError, BrokenPipeError) as e:
             print(f"Conexión perdida ({e}). Reconectando...")
             conexion.close()
             conexion, direccion = esperarConexion(servidor, puerto)
-        except ValueError as e:
-            print(f"Error procesando datos: {e} - Datos: {datosRecibidos}")
             
 except KeyboardInterrupt:
     print("Fin de la conexión por usuario")
@@ -127,4 +117,4 @@ finally:
     conexion.close()
     servidor.close()
     plt.ioff()
-    print("Programa terminado")
+    print("Programa terminado ")
