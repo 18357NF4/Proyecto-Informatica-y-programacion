@@ -6,7 +6,7 @@ import socket
 import json
 
 calibracion = 0.1606
-error = 0.1
+error = 0.05
 
 class Sensor:
     def __init__(self, board, pin, calibracion):
