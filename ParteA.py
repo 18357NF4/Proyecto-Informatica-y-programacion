@@ -77,7 +77,10 @@ def promedio(arr):
     elif len(arr) <= 5:
         return sum(arr) / 5
     else:
-        return sum(arr) / len(arr)
+        suma=0
+        for i in range(1,6):
+            suma+=arr[-i]
+        return suma/5
 
 def valorTendencia(diferencia,promedio):
     if diferencia <-error*promedio:
