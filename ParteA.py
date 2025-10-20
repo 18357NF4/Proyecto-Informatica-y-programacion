@@ -3,10 +3,10 @@ import time
 import csv
 from datetime import datetime
 import socket
-import json
+
 
 calibracion = 0.1606
-error = 0.05
+error = 0.01
 
 class Sensor:
     def __init__(self, board, pin, calibracion):
@@ -77,10 +77,7 @@ def promedio(arr):
     elif len(arr) <= 5:
         return sum(arr) / 5
     else:
-        suma=0
-        for i in range(1,6):
-            suma+=arr[-i]
-        return suma/5
+        return sum(arr) / len(arr)
 
 def valorTendencia(diferencia,promedio):
     if diferencia <-error*promedio:
@@ -123,13 +120,13 @@ def mantenerConexion(cliente, puerto, IP):
 
 # --- CONFIGURACIÓN ---
 #Datos para ek socket
-IP_SERVIDOR="192.168.100.121"
+IP_SERVIDOR="192.168.43.126"
 PUERTO=21129
 cliente=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 
 
 # Definición de la placa e inicialización del iterador
-board = pyfirmata.Arduino('COM7')
+board = pyfirmata.Arduino('COM3')
 it = pyfirmata.util.Iterator(board)
 it.start()
 
@@ -208,16 +205,13 @@ try:
             promedios.append(p)
             tendencias.append(tendencia)
 #--BLOQUE DE TRANSMISION DE DATOS --------------------------------------------
+               # --- BLOQUE SIMPLIFICADO DE TRANSMISIÓN ---
             try:
-                datos = {
-                    'temperatura': temp,
-                    'fecha': fechaHora,
-                    'tendencia': tendencia
-                }
-                mensajejson = json.dumps(datos)
-                cliente.send(mensajejson.encode('utf-8'))
+                # Enviar datos en formato simple: "temperatura|fecha|tendencia"
+                mensaje = f"{temp:.2f}|{fechaHora}|{tendencia}"
+                cliente.send(mensaje.encode('utf-8'))
             except (ConnectionRefusedError, ConnectionAbortedError, BrokenPipeError):
-                    print("Error de conexión")
+                print("Error de conexión")
 #--BLOQUE DE MUESTREO DE TENDENCIAS Y TEMPERATURA
             print(f'Temperatura: {temp:.2f}°C | Promedio: {p:.2f}°C | Tendencia: {tendencia} | Intervalo: {intervaloLectura:.1f}s')
             # Preparar para mostrar tendencia
