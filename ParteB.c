@@ -26,7 +26,7 @@ lecturas* leer_csv(const char *nombre_del_archivo, int *total) {
 
     while (fgets(linea, sizeof(linea), archivo) != NULL) {
         if (contador >= capacidad) {
-            capacidad *= 2;
+            capacidad += 10;
             lectura = realloc(lectura, capacidad * sizeof(lecturas));
         }
 
