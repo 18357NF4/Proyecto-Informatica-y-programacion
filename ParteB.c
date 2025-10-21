@@ -132,10 +132,28 @@ void calcular_mediana_temperaturas(lecturas datos[], int total) {
     free(temperaturas);
     printf("La mediana es %.2f\n", mediana);  // CORRECCIÓN: faltaba ; y \n
 }
+void moda(lecturas datos[],int total){
+    int frectot=1;
+    int frec=0;
+    double moda;
+    for(int i=0; i<total;i++){
+        frec= 1;
+        for(int j=0; j<total;j++){
+           if( datos[i].temperatura == datos[j].temperatura){
+            frec ++;
+           }
 
+        }
+        if (frec<frectot){
+            frectot=frec;
+            moda= datos[i].temperatura;
+        }
+    }
+    printf("la moda es : %2f\n", moda );
+}
 int main() {
     int total;
-    const char *nombre_fijo = "C:/Users/ignac/Documents/Python/DatosInformatica2.csv";
+    const char *nombre_fijo = "C:/Users/giuli/facu/2do/segundo semestre/informatica y progrmacion/proyecto_final/DatosInformatica2.csv";
 
     lecturas *lectura = leer_csv(nombre_fijo, &total);
 
@@ -151,7 +169,7 @@ int main() {
     find(lectura, total);
     prom_desvestandar(lectura, total);
     calcular_mediana_temperaturas(lectura, total);
-
+    moda(lectura,total);
     free(lectura);
     return 0;
 }
