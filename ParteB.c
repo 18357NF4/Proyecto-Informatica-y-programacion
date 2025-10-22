@@ -120,7 +120,7 @@ void calcular_mediana_temperaturas(lecturas datos[], int total) {
         temperaturas[i] = datos[i].temperatura;
     }
 
-    qsort(temperaturas, total, sizeof(double), comparar_doubles);  // CORRECCIÓN: función correcta
+    qsort(temperaturas, total, sizeof(double), comparar_doubles);  
 
     double mediana;
     if (total % 2 == 1) {
@@ -130,7 +130,7 @@ void calcular_mediana_temperaturas(lecturas datos[], int total) {
     }
 
     free(temperaturas);
-    printf("La mediana es %.2f\n", mediana);  // CORRECCIÓN: faltaba ; y \n
+    printf("La mediana es %.2f\n", mediana);  
 }
 void moda(lecturas datos[],int total){
     int frectot=1;
