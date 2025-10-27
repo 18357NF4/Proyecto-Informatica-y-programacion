@@ -88,34 +88,38 @@ def valorTendencia(diferencia,promedio):
         return "ALTA"
 
 def mantenerConexion(cliente, puerto, IP):
-    # Verificación ultra simple
     try:
-        # Solo verificar si el socket sigue siendo válido
-        cliente.getsockopt(socket.SOL_SOCKET, socket.SO_ERROR)
+        cliente.setblocking(False)
+        try:
+            data = cliente.recv(1024, socket.MSG_PEEK)
+            if data == b'':
+                raise ConnectionError("Servidor desconectado")
+        except BlockingIOError:
+            pass
+        except ConnectionResetError:
+            raise ConnectionError("Conexión resetada")
+        finally:
+            cliente.setblocking(True)
         return cliente
-    except:
-        print("Conexión perdida. Iniciando reconexión...")
+    except (ConnectionError, OSError, socket.error) as e:
+        print(f"Conexión perdida ({e}). Iniciando reconexión...")
         try:
             cliente.close()
         except:
             pass
-        
         while True:
             try:
                 nuevo_cliente = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 nuevo_cliente.settimeout(3)
                 resultado = nuevo_cliente.connect_ex((IP, puerto))
-                
                 if resultado == 0:
                     print("Reconexión exitosa")
                     return nuevo_cliente
                 else:
                     print("Intento de reconexión fallido, reintentando...")
                     nuevo_cliente.close()
-                    
             except Exception as e:
                 print(f"Error en reconexión: {e}")
-            
             time.sleep(3)
 
 # --- CONFIGURACIÓN ---
