@@ -39,7 +39,6 @@ class Leds:
         self.rojo.write(1)
     
     def destellar(self):
-        """Destello rápido no bloqueante"""
         self.prender()
         time.sleep(0.05)
         self.apagar()
@@ -211,14 +210,12 @@ try:
 #--BLOQUE DE TRANSMISION DE DATOS --------------------------------------------
                # --- BLOQUE SIMPLIFICADO DE TRANSMISIÓN ---
             try:
-                # Enviar datos en formato simple: "temperatura|fecha|tendencia"
                 mensaje = f"{temp:.2f}|{fechaHora}|{tendencia}"
                 cliente.send(mensaje.encode('utf-8'))
             except (ConnectionRefusedError, ConnectionAbortedError, BrokenPipeError):
                 print("Error de conexión")
 #--BLOQUE DE MUESTREO DE TENDENCIAS Y TEMPERATURA
             print(f'Temperatura: {temp:.2f}°C | Promedio: {p:.2f}°C | Tendencia: {tendencia} | Intervalo: {intervaloLectura:.1f}s')
-            # Preparar para mostrar tendencia
             if len(temperaturas) >= 5:
                 diferenciaActual = temp - p
                 mostrandoTendencia = True
