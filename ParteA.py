@@ -49,25 +49,15 @@ class Leds:
         time.sleep(0.05)
         self.apagar()
     
-    def marcarTendencia(self, diferencia, error, tiempo_inicio, promedio):
+    def marcarTendencia(self, diferencia, error,promedio):
         #controla los leds segun la tendencia calculada
-        tiempo_transcurrido = time.time() - tiempo_inicio
         self.apagar()
-        
         if diferencia < -error*promedio:
-            # Verde parpadeante
-            if int(tiempo_transcurrido * 2) % 2 == 0:
                 self.verde.write(1)
         elif abs(diferencia) < error*promedio:
-            # Amarillo parpadeante
-            if int(tiempo_transcurrido * 2) % 2 == 0:
                 self.amarillo.write(1)
         else:
-            # Rojo parpadeante
-            if int(tiempo_transcurrido * 2) % 2 == 0:
                 self.rojo.write(1)
-
-        return tiempo_transcurrido < 0.5
 
 class Boton:
     def __init__(self, board, pin):
@@ -107,7 +97,7 @@ def mantenerConexion(cliente, puerto, IP):
         except BlockingIOError:
             pass
         except ConnectionResetError:
-            raise ConnectionError("Conexión resetada")
+            raise ConnectionError("Conexión reseteada")
         finally:
             cliente.setblocking(True)
         return cliente
@@ -134,13 +124,13 @@ def mantenerConexion(cliente, puerto, IP):
 
 # --- CONFIGURACIÓN ---
 #Datos para el socket
-IP_SERVIDOR="192.168.213.126"
+IP_SERVIDOR="192.168.100.121"
 PUERTO=21129
 cliente=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 
 
 # Definición de la placa e inicialización del iterador
-board = pyfirmata.Arduino('COM3')
+board = pyfirmata.Arduino('COM7')
 it = pyfirmata.util.Iterator(board)
 it.start()
 
@@ -155,7 +145,7 @@ temperaturas = [] #historial de temperaturas
 promedios = [] #promedios calculados 
 fechas = [] #fecha y horas de la lecturas
 tendencias = [] #tendencias en cada lecturas
-intervaloLectura = 3.5
+intervaloLectura = 1.5
 ultimoTiempoLectura = time.time()
 programaActivo = True
 
@@ -225,8 +215,7 @@ try:
             tendencia = valorTendencia(temp - p,p)
             promedios.append(p)
             tendencias.append(tendencia)
-#--BLOQUE DE TRANSMISION DE DATOS --------------------------------------------
-               
+#--BLOQUE DE TRANSMISION DE DATOS --------------------------------------------               
             try:
                 mensaje = f"{temp:.2f}|{fechaHora}|{tendencia}"
                 cliente.send(mensaje.encode('utf-8'))
@@ -246,7 +235,7 @@ try:
             pass #mostrar tendencia con LEDs parpadeantes por 0.5 segundos
         elif mostrandoTendencia:
             if tiempoActual - tiempoInicioTendencia < 0.5:
-                leds.marcarTendencia(diferenciaActual, error, tiempoInicioTendencia, p)
+                leds.marcarTendencia(diferenciaActual, error,p)
             else:
                 mostrandoTendencia = False
                 leds.apagar()
