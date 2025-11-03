@@ -5,7 +5,7 @@
 // Definición de la estructura para almacenar cada lectura del sensor
 typedef struct {
     char fecha[20]; // Almacena la fecha en formato string
-    char hora[10]; // Almacena la hora en formato string 
+    char hora[10]; // Almacena la hora en formato string
     double temperatura; // Almacena el valor de temperatura como número decimal
     char tendencias;  // Almacena la tendencia como un solo carácter
 } lecturas;
@@ -15,7 +15,7 @@ lecturas* leer_csv(const char *nombre_del_archivo, int *total) {
     FILE *archivo = fopen(nombre_del_archivo, "r");
     if (!archivo) {
         printf("Error al abrir el archivo");
-        return NULL; 
+        return NULL;
     }
 
     char linea[256]; // Buffer para almacenar cada línea del archivo
@@ -54,7 +54,7 @@ lecturas* leer_csv(const char *nombre_del_archivo, int *total) {
 
     fclose(archivo); // Cierra el archivo
     *total = contador;  // Retorna el total de lecturas
-    printf("Se leyeron %d lecturas correctamente\n", contador); 
+    printf("Se leyeron %d lecturas correctamente\n", contador);
     return lectura; // Retorna el arreglo con los datos
 }
 
@@ -80,9 +80,9 @@ void find(lecturas lectura[], int total) {
         }
     }
     // Muestra los resultados
-    printf("La mayor temperatura registrada fue de: %.2f°C y se tomo el dia %s a las %s\n",
+    printf("La mayor temperatura registrada fue de: %.2fC y se tomo en la fecha %s\n",
            mayor, lectura[posmayor].fecha, lectura[posmayor].hora);
-    printf("La menor temperatura registrada fue de: %.2f°C y se tomo el dia %s a las %s\n",
+    printf("La menor temperatura registrada fue de: %.2fC y se tomo en la fecha %s\n",
            menor, lectura[posmenor].fecha, lectura[posmenor].hora);
 }
 
@@ -95,7 +95,7 @@ void prom_desvestandar(lecturas lectura[], int total) {
     // promedio
     double sum1 = 0;
     for (int i = 0; i < total; i++) {
-        sum1 += lectura[i].temperatura; 
+        sum1 += lectura[i].temperatura;
     }
     promedio = sum1 / total;
     //desviacion estandar
@@ -121,7 +121,7 @@ int comparar_doubles(const void *a, const void *b) {
 void calcular_mediana_temperaturas(lecturas datos[], int total) {
     if (total <= 0) {
         printf("No hay datos para calcular mediana.\n");
-        return; 
+        return;
     }
     // Crea un arreglo temporal solo con las temperaturas
     double *temperaturas = malloc(total * sizeof(double));
@@ -129,7 +129,7 @@ void calcular_mediana_temperaturas(lecturas datos[], int total) {
         temperaturas[i] = datos[i].temperatura;
     }
     // Ordena las temperaturas de menor a mayor
-    qsort(temperaturas, total, sizeof(double), comparar_doubles);  
+    qsort(temperaturas, total, sizeof(double), comparar_doubles);
 
     double mediana;
     if (total % 2 == 1) {
@@ -141,41 +141,41 @@ void calcular_mediana_temperaturas(lecturas datos[], int total) {
     }
 
     free(temperaturas);
-    printf("La mediana es %.2f\n", mediana);  
+    printf("La mediana es %.2f\n", mediana);
 }
 void moda(lecturas datos[], int total) {
     if (total <= 0) {
         printf("No hay datos para calcular moda.\n");
         return;
     }
-    
+
     int max_frecuencia = 0;     // Frecuencia máxima encontrada
     double moda_valor = datos[0].temperatura;  // Valor de la moda
     int frec_actual = 0;        // Frecuencia temporal
-    
+
     // Compara cada temperatura con todas las demás
     for(int i = 0; i < total; i++) {
         frec_actual = 0;  // Reinicia contador para cada temperatura
-        
+
         // Cuenta cuántas veces aparece esta temperatura
         for(int j = 0; j < total; j++) {
             if(datos[i].temperatura == datos[j].temperatura) {
                 frec_actual++;  // Incrementa si encuentra temperatura igual
             }
         }
-        
+
         // Actualiza la moda si encuentra una frecuencia mayor
         if (frec_actual > max_frecuencia) {
             max_frecuencia = frec_actual;
             moda_valor = datos[i].temperatura;
         }
     }
-    
+
     printf("La moda es: %.2f (aparece %d veces)\n", moda_valor, max_frecuencia);
 }
 int main() {
     int total; // Variable para almacenar el número total de lecturas
-    const char *nombre_fijo = "C:/Users/giuli/facu/2do/segundo semestre/informatica y progrmacion/proyecto_final/DatosInformatica2.csv";
+    const char *nombre_fijo = "C:/Users/ignac/Documents/Python/DatosInformatica2.csv";
      // Lee los datos del archivo CSV
     lecturas *lectura = leer_csv(nombre_fijo, &total);
     // Verifica si se pudieron leer los datos correctamente
@@ -195,3 +195,4 @@ int main() {
     free(lectura);
     return 0;
 }
+
