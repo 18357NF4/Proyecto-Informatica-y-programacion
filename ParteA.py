@@ -58,7 +58,7 @@ class Leds:
                 self.amarillo.write(1)
         else:
                 self.rojo.write(1)
-
+        
 class Boton:
     def __init__(self, board, pin):
         #configura el boton al pin digital de entrada
@@ -101,7 +101,7 @@ def mantenerConexion(cliente, puerto, IP):
         finally:
             cliente.setblocking(True)
         return cliente
-    except (ConnectionError, OSError, socket.error) as e:
+    except (ConnectionError, OSError, socket.error,ConnectionAbortedError,socket.timeout) as e:
         print(f"Conexión perdida ({e}). Iniciando reconexión...")
         try:
             cliente.close()
@@ -124,7 +124,7 @@ def mantenerConexion(cliente, puerto, IP):
 
 # --- CONFIGURACIÓN ---
 #Datos para el socket
-IP_SERVIDOR="192.168.100.121"
+IP_SERVIDOR="192.168.213.111"
 PUERTO=21129
 cliente=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 
@@ -145,7 +145,7 @@ temperaturas = [] #historial de temperaturas
 promedios = [] #promedios calculados 
 fechas = [] #fecha y horas de la lecturas
 tendencias = [] #tendencias en cada lecturas
-intervaloLectura = 1.5
+intervaloLectura = 2.5
 ultimoTiempoLectura = time.time()
 programaActivo = True
 
@@ -226,19 +226,21 @@ try:
             if len(temperaturas) >= 5:
                 diferenciaActual = temp - p
                 mostrandoTendencia = True
-                tiempoInicioTendencia = tiempoActual
-                
+                tiempoInicioTendencia = tiempoActual    
             ultimoTiempoLectura = tiempoActual
             midiendo = False
         # --- CONTROL DE LEDs ---
         if botonPresionado:
             pass #mostrar tendencia con LEDs parpadeantes por 0.5 segundos
         elif mostrandoTendencia:
-            if tiempoActual - tiempoInicioTendencia < 0.5:
-                leds.marcarTendencia(diferenciaActual, error,p)
+            if tiempoActual - tiempoInicioTendencia < 0.05:
+                leds.prender()
             else:
                 mostrandoTendencia = False
                 leds.apagar()
+        elif not mostrandoTendencia:
+            if tiempoActual - tiempoInicioTendencia > 0.4 and tiempoActual - tiempoInicioTendencia <2:
+                leds.marcarTendencia(diferenciaActual,error,p)
         elif len(temperaturas) < 5 and not botonPresionado:
             #Leds encendisos hasta tener 5 lecturas
             leds.prender()
